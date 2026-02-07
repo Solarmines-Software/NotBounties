@@ -336,9 +336,7 @@ public class WantedTags {
     }
 
     private void teleport() {
-        // check if the player moved or has velocity before teleporting
-        if (hasMoved() || player.getVelocity().length() > 0.1)
-            tag.teleport();
+        tag.teleport();
     }
 
     public void disable() {
