@@ -74,8 +74,13 @@ public class Events implements Listener {
 
         if (System.currentTimeMillis() - lastSeen > 1000 * 60) {
             // update player data if they have been online for more than a minute
+            // Use a small delay to batch multiple player quits together and prevent thread exhaustion
             NotBounties.debugMessage("Updating player data for " + playerData.getPlayerName(), false);
-            NotBounties.getServerImplementation().async().runNow(() -> DataManager.syncPlayerData(event.getPlayer().getUniqueId(), null));
+            UUID playerUUID = event.getPlayer().getUniqueId();
+            // Delay by 1 tick to allow batching with other player quits
+            NotBounties.getServerImplementation().global().runDelayed(() -> {
+                NotBounties.getServerImplementation().async().runNow(() -> DataManager.syncPlayerData(playerUUID, null));
+            }, 1);
         }
 
         Bounty bounty = getBounty(event.getPlayer().getUniqueId());

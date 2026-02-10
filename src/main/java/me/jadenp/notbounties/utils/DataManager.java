@@ -1302,16 +1302,18 @@ public class DataManager {
      * @param playerDataList2 A sorted player data list.
      */
     private static void syncTimes(List<PlayerData> playerDataList1, List<PlayerData> playerDataList2) {
-        // Optimize: Use HashMap for O(1) lookups instead of O(n*m) nested loops
-        // This is critical for performance when dealing with large player datasets (90k+ players)
-        Map<String, PlayerData> playerDataMap2 = new HashMap<>(playerDataList2.size());
-        for (PlayerData playerData : playerDataList2) {
-            playerDataMap2.put(playerData.getID(), playerData);
-        }
+        // Both lists are sorted by UUID, so we can iterate through both simultaneously
+        // This is O(n + m) where n and m are the sizes of the two lists
+        int index1 = 0;
+        int index2 = 0;
         
-        for (PlayerData playerData1 : playerDataList1) {
-            PlayerData playerData2 = playerDataMap2.get(playerData1.getID());
-            if (playerData2 != null) {
+        while (index1 < playerDataList1.size() && index2 < playerDataList2.size()) {
+            PlayerData playerData1 = playerDataList1.get(index1);
+            PlayerData playerData2 = playerDataList2.get(index2);
+            
+            int comparison = playerData1.compareTo(playerData2);
+            
+            if (comparison == 0) {
                 // sync times - not lastSeen because that is used to sync other options later
                 long lastClaim = Math.max(playerData1.getLastClaim(), playerData2.getLastClaim());
                 playerData1.setLastClaim(lastClaim);
@@ -1319,6 +1321,13 @@ public class DataManager {
                 long bountyCooldown = Math.max(playerData1.getBountyCooldown(), playerData2.getBountyCooldown());
                 playerData1.setBountyCooldown(bountyCooldown);
                 playerData2.setBountyCooldown(bountyCooldown);
+                
+                index1++;
+                index2++;
+            } else if (comparison < 0) {
+                index1++;
+            } else {
+                index2++;
             }
         }
     }

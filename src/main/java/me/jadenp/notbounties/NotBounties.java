@@ -204,7 +204,9 @@ public final class NotBounties extends JavaPlugin {
             ImmunityManager.checkOnlinePermissionImmunity();
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             if (players.size() == 1 && ProxyDatabase.isEnabled() && ProxyDatabase.isDatabaseSynchronization() && ProxyMessaging.hasConnectedBefore()) {
-                DataManager.syncPlayerData(players.iterator().next().getUniqueId(), null);
+                // syncPlayerData does database I/O and must run async to avoid blocking the global region thread
+                UUID playerUUID = players.iterator().next().getUniqueId();
+                getServerImplementation().async().runNow(() -> DataManager.syncPlayerData(playerUUID, null));
             }
 
         }, 3611, 3600);
@@ -382,6 +384,7 @@ public final class NotBounties extends JavaPlugin {
         SkinManager.shutdown();
         BountyMap.shutdown();
         LoggedPlayers.shutdown();
+        RemovePersistentEntitiesEvent.shutdown();
 
         // remove bounty entities
         WantedTags.disableWantedTags();
